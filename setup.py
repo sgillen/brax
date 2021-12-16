@@ -24,7 +24,7 @@ from setuptools import setup
 
 setup(
     name="brax",
-    version="0.0.7",
+    version="0.0.8",
     description=("A differentiable physics engine written in JAX."),
     author="Brax Authors",
     author_email="no-reply@google.com",
@@ -48,6 +48,7 @@ setup(
         "Pillow",
         "pytinyrenderer",
         "tensorboardX",
+        "trimesh",
     ],
     extras_require={
         "develop": ["pytest", "transforms3d"],
@@ -61,4 +62,7 @@ setup(
         "Topic :: Scientific/Engineering :: Artificial Intelligence",
     ],
     keywords="JAX reinforcement learning rigidbody physics",
+    data_files=[
+        ("testdata", ["brax/tests/testdata/cylinder.stl"])
+    ],
 )
