@@ -1,4 +1,5 @@
-import * as THREE from 'https://threejs.org/build/three.module.js';
+import * as THREE from 'https://cdn.jsdelivr.net/gh/mrdoob/three.js@r135/build/three.module.js';
+import 'https://cdn.jsdelivr.net/gh/mrdoob/three.js@r135/examples/jsm/geometries/ParametricGeometry.js';
 
 const basicMaterial = new THREE.MeshPhongMaterial({color: 0x665544});
 const targetMaterial = new THREE.MeshPhongMaterial({color: 0xff2222});
@@ -37,21 +38,36 @@ function createBox(box) {
 }
 
 function createPlane(plane) {
-  const group = new THREE.Group();
-  const mesh = new THREE.Mesh(
-      new THREE.PlaneGeometry(2000, 2000),
-      new THREE.MeshPhongMaterial({color: 0x999999, depthWrite: false}));
+  // make a checkerboard material
+  const width = 2;
+  const height = 2;
+
+  const size = width * height;
+  const data = new Uint8Array( 3 * size );
+  const colors = [new THREE.Color( 0x999999 ), new THREE.Color( 0x888888 )];
+
+  for ( let i = 0; i < size; i ++ ) {
+    const stride = i * 3;
+    const ck = [0, 1, 1, 0];
+    const color = colors[ck[i]];
+    data[ stride + 0] = Math.floor( color.r * 255 );
+    data[ stride + 1] = Math.floor( color.g * 255 );
+    data[ stride + 2] = Math.floor( color.b * 255 );
+  }
+  const texture = new THREE.DataTexture( data, width, height, THREE.RGBFormat );
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  texture.repeat.set( 1000, 1000 );
+  const material = new THREE.MeshStandardMaterial( { map: texture } );
+
+  // mesh
+  const geometry = new THREE.PlaneGeometry( 2000, 2000);
+  const mesh = new THREE.Mesh( geometry, material );
   mesh.rotation.x = -Math.PI / 2;
   mesh.receiveShadow = true;
   mesh.baseMaterial = mesh.material;
-  group.add(mesh);
 
-  const mesh2 = new THREE.GridHelper(2000, 2000, 0x000000, 0x000000);
-  mesh2.material.opacity = 0.4;
-  mesh2.material.transparent = true;
-  mesh2.baseMaterial = mesh2.material;
-  group.add(mesh2);
-  return group;
+  return mesh;
 }
 
 function createSphere(sphere, name) {
@@ -79,7 +95,7 @@ function createHeightMap(heightMap) {
     target.set(x, y, z).multiplyScalar(1);
   }
 
-  const geom = new THREE.ParametricGeometry(builder, n_subdiv, n_subdiv);
+  const geom = new ParametricGeometry(builder, n_subdiv, n_subdiv);
   geom.normalizeNormals();
 
   const group = new THREE.Group();
@@ -117,6 +133,55 @@ function createMesh(mesh, geom) {
   return mesh3;
 }
 
+function addHat(child, collider) {
+  const radius = collider.capsule.radius;
+
+  const hat = new THREE.Group();
+  hat.name = "santa hat";
+  const hatRadius = radius * 0.95;
+  const thickness = radius * 0.22;
+
+  const points = [];
+  for (let i = 0; i < 8; i++) {
+      points.push(new THREE.Vector2(Math.cos(i * 0.2) * hatRadius, (i + 2) * radius / 4));
+  }
+  const beanie = new THREE.Mesh(new THREE.LatheGeometry(points), new THREE.MeshPhongMaterial({
+      color: 0xff0000
+  }));
+  beanie.baseMaterial = beanie.material;
+  hat.add(beanie);
+
+  const whiteMaterial = new THREE.MeshPhongMaterial({
+      color: 0xffffff
+  });
+
+  const pompom = new THREE.Mesh(new THREE.SphereGeometry(thickness, 8, 8), whiteMaterial);
+  pompom.position.set(0, points[points.length - 1].y, 0);
+  pompom.baseMaterial = pompom.material;
+  hat.add(pompom);
+
+  const side = new THREE.Mesh(new THREE.TorusGeometry(hatRadius, thickness, 8, 25), whiteMaterial);
+  side.rotateX(Math.PI / 2);
+  side.position.set(0, (hatRadius + thickness) / 2, 0);
+  side.baseMaterial = side.material;
+  hat.add(side);
+  // Tilt the hat slightly.
+  hat.rotateZ(0.3);
+
+  const group = new THREE.Group();
+  group.add(hat);
+  group.add(child);
+  return group;
+}
+
+function isHead(body, collider) {
+  if (!('capsule' in collider)) {
+    return false;
+  }
+  return ((body.name == 'torso' && collider.capsule.radius == 0.09) ||
+      (body.name == '$ Torso' && collider.capsule.radius == 0.25));
+}
+
 function createScene(system) {
   const scene = new THREE.Scene();
   const meshGeoms = {};
@@ -140,6 +205,9 @@ function createScene(system) {
         child = createHeightMap(collider.heightMap);
       } else if ('mesh' in collider) {
         child = createMesh(collider.mesh, meshGeoms[collider.mesh.name]);
+      }
+      if (isHead(body, collider)) {
+        child = addHat(child, collider);
       }
       if (collider.rotation) {
         // convert from z-up to y-up coordinate system

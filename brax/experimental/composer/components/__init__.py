@@ -23,23 +23,33 @@ import importlib
 from typing import Any, Dict
 
 DEFAULT_REGISTER_COMPONENTS = ('ant', 'ground', 'halfcheetah', 'singleton',
-                               'pro_ant', 'octopus')
+                               'pro_ant', 'octopus', 'humanoid')
 
 COMPONENT_MAPPING = {}
 
 
+def list_components():
+  return sorted(COMPONENT_MAPPING)
+
+
+def exists(component: str):
+  return component in COMPONENT_MAPPING
+
+
 def register_component(component: str,
                        component_specs: Any = None,
+                       load_path: str = None,
                        override: bool = False):
   """Register component library."""
   global COMPONENT_MAPPING
   if not override and component in COMPONENT_MAPPING:
     return COMPONENT_MAPPING[component]
   if component_specs is None:
-    if '.' not in component:
-      load_path = f'brax.experimental.composer.components.{component}'
-    else:
-      load_path = component
+    if not load_path:
+      if '.' not in component:
+        load_path = f'brax.experimental.composer.components.{component}'
+      else:
+        load_path = component
     component_lib = importlib.import_module(load_path)
   COMPONENT_MAPPING[component] = component_lib
   return component_lib

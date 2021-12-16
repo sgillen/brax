@@ -3,9 +3,9 @@
  * connect to a remote brax engine for interactive visualization.
  */
 
-import * as THREE from 'https://threejs.org/build/three.module.js';
-import {OrbitControls} from 'https://threejs.org/examples/jsm/controls/OrbitControls.js';
-import {GUI} from 'https://threejs.org/examples/jsm/libs/lil-gui.module.min.js';
+import * as THREE from 'https://cdn.jsdelivr.net/gh/mrdoob/three.js@r135/build/three.module.js';
+import {OrbitControls} from 'https://cdn.jsdelivr.net/gh/mrdoob/three.js@r135/examples/jsm/controls/OrbitControls.js';
+import {GUI} from 'https://cdn.jsdelivr.net/gh/mrdoob/three.js@r135/examples/jsm/libs/lil-gui.module.min.js';
 
 import {Animator} from './animator.js';
 import {Selector} from './selector.js';
@@ -78,7 +78,10 @@ class Viewer {
     dirLight.shadow.camera.right = 10;
     dirLight.shadow.camera.near = 0.1;
     dirLight.shadow.camera.far = 40;
+    dirLight.shadow.mapSize.width = 4096; // default is 512
+    dirLight.shadow.mapSize.height = 4096; // default is 512
     this.scene.add(dirLight);
+    this.dirLight = dirLight;
 
     /* set up orbit controls */
     this.controls = new OrbitControls(this.camera, this.renderer.domElement);
@@ -103,6 +106,11 @@ class Viewer {
         .name('Follow Distance')
         .min(1)
         .max(50);
+    const santaHat = this.scene.getObjectByName('santa hat');
+    if (santaHat) {
+      santaHat.visible = false;
+      cameraFolder.add(santaHat, 'visible').name('Santa Hat');
+    }
 
     /* set up animator and load trajectory */
     this.animator = new Animator(this);
@@ -110,7 +118,7 @@ class Viewer {
 
     /* add body insepctors */
     const bodiesFolder = this.gui.addFolder('Bodies');
-    bodiesFolder.open();
+    bodiesFolder.close();
 
     this.bodyFolders = {};
 
@@ -118,6 +126,7 @@ class Viewer {
       if (!c.name) continue;
       const folder = bodiesFolder.addFolder(c.name);
       this.bodyFolders[c.name] = folder;
+      folder.close();
 
       function defaults() {
         for (const gui of arguments) {
@@ -225,6 +234,10 @@ class Viewer {
       }
     }
 
+    // make sure target stays within shadow map region
+    this.dirLight.position.set(targetPos.x + 3, targetPos.y + 10, targetPos.z + 10);
+    this.dirLight.target = this.target;
+
     if (this.controls.update()) {
       this.setDirty();
     }
@@ -266,10 +279,12 @@ class Viewer {
         }
       });
     }
-    const titleElement =
-        this.bodyFolders[object.name].domElement.querySelector('.title');
-    if (titleElement) {
-      titleElement.style.backgroundColor = hovering ? '#2fa1d6' : '#000';
+    if (object.name in this.bodyFolders) {
+      const titleElement =
+          this.bodyFolders[object.name].domElement.querySelector('.title');
+      if (titleElement) {
+        titleElement.style.backgroundColor = hovering ? '#2fa1d6' : '#000';
+      }
     }
   }
 
@@ -281,10 +296,12 @@ class Viewer {
         child.material = selected ? selectMaterial : child.baseMaterial;
       }
     });
-    if (object.selected) {
-      this.bodyFolders[object.name].open();
-    } else {
-      this.bodyFolders[object.name].close();
+    if (object.name in this.bodyFolders) {
+      if (object.selected) {
+        this.bodyFolders[object.name].open();
+      } else {
+        this.bodyFolders[object.name].close();
+      }
     }
     this.setDirty();
   }

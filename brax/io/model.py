@@ -14,19 +14,19 @@
 
 """Loading/saving of inference functions."""
 
+import pickle
 from typing import Any
-from flax import serialization
 
 from brax.io.file import File
 
 
-def load_params(path: str, target: Any) -> Any:
+def load_params(path: str) -> Any:
   with File(path, 'rb') as fin:
     buf = fin.read()
-  return serialization.from_bytes(target, buf)
+  return pickle.loads(buf)
 
 
 def save_params(path: str, params: Any):
   """Saves parameters in Flax format."""
   with File(path, 'wb') as fout:
-    fout.write(serialization.to_bytes(params))
+    fout.write(pickle.dumps(params))
