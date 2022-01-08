@@ -12,81 +12,61 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""An acrobot environment."""
+"""An inverted pendulum environment."""
 
 import brax
 from brax import jumpy as jp
 from brax.envs import env
-import jax
+import math
 
-
-class Acrobot(env.Env):
-  """Trains an acrobot to remain stationary."""
+class Pendulum(env.Env):
+  """Trains an inverted pendulum to remain stationary."""
 
   def __init__(self, **kwargs):
     super().__init__(_SYSTEM_CONFIG, **kwargs)
 
   def reset(self, rng: jp.ndarray) -> env.State:
     """Resets the environment to an initial state."""
-    rng = jax.random.PRNGKey(0)
     rng, rng1, rng2 = jp.random_split(rng, 3)
     qpos = self.sys.default_angle() + jp.random_uniform(
-        rng1, (self.sys.num_joint_dof,), -.01, .01)
+        rng1, (self.sys.num_joint_dof,), math.pi - .01, math.pi + .01)
     qvel = jp.random_uniform(rng2, (self.sys.num_joint_dof,), -.01, .01)
     qp = self.sys.default_qp(joint_angle=qpos, joint_velocity=qvel)
-    #    qp = self.sys.default_qp()
     info = self.sys.info(qp)
-    (joint_angle,), (joint_vel,) = self.sys.joints[0].angle_vel(qp)
-    obs = self._get_obs(qp, info, joint_angle, joint_vel)
+    obs = self._get_obs(qp, info)
     reward, done, zero = jp.zeros(3)
     metrics = {
-        'dist_penalty': zero,
-        'vel_penalty': zero,
-        'alive_bonus': zero,
-        'r_tot': zero,
+        'survive_reward': zero,
     }
     return env.State(qp, obs, reward, done, metrics)
 
   def step(self, state: env.State, action: jp.ndarray) -> env.State:
     """Run one timestep of the environment's dynamics."""
+
     qp, info = self.sys.step(state.qp, action)
-    (joint_angle,), (joint_vel,) = self.sys.joints[0].angle_vel(qp)
-    obs = self._get_obs(qp, info, joint_angle, joint_vel)
+    obs = self._get_obs(qp, info)
 
-    alive_bonus = 10.0
+    reward = -(obs[0] - 0.0)**2
+    #reward = 1.0
     
+    #done = jp.where(qp.pos[1, 2] > .2, jp.float32(0), jp.float32(1))
+    done = jp.float32(0)
+    state.metrics.update(survive_reward=reward)
 
-    #r = jp.sum(-(obs**2))
-    r = -jp.sum(joint_angle**2) + -.1*jp.sum(joint_vel**2) + alive_bonus
-    
-    #done = jp.where(y <= 1, jp.float32(1), jp.float32(0))
-    #done = jp.where(jp.abs(joint_angle[0]) >= .5, jp.float32(1), jp.float32(0))
-
-    done = jp.float32(0);
-    state.metrics.update(
-#        dist_penalty=dist_penalty,
-#        vel_penalty=vel_penalty,
-        r_tot=r)
-
-    return state.replace(qp=qp, obs=obs, reward=r, done=done)
+    return state.replace(qp=qp, obs=obs, reward=reward, done=done)
 
   @property
   def action_size(self):
     return 1
 
-  def _get_obs(self, qp: brax.QP, info: brax.Info, joint_angle: jp.ndarray,
-               joint_vel: jp.ndarray) -> jp.ndarray:
+  def _get_obs(self, qp: brax.QP, info: brax.Info) -> jp.ndarray:
     """Observe cartpole body position and velocities."""
-
-    # position_obs = [
-    #     jp.array([qp.pos[0, 0]]),  # cart x pos
-    #     jp.sin(joint_angle),  # link angles
-    #     jp.cos(joint_angle)
-    # ]
-
+    # some pre-processing to pull joint angles and velocities
     (joint_angle,), (joint_vel,) = self.sys.joints[0].angle_vel(qp)
- 
+
     return jp.concatenate((joint_angle, joint_vel))
+
+
 
 
 _SYSTEM_CONFIG = """
@@ -110,71 +90,36 @@ bodies {
   colliders {
     capsule {
       radius: 0.049
-      length: 1.0 
+      length: 0.69800085
     }
   }
   frozen { position { x: 0 y: 1 z: 0 } rotation { x: 1 y: 0 z: 1 } }
-  mass: 2.5
+  mass: 5.0185914
 }
 joints {
   name: "hinge"
-  stiffness: 30000.0
+  stiffness: 10000.0
   parent: "cart"
   child: "pole"
-  child_offset { z: -.45 }
+  child_offset { z: -.3 }
   rotation {
     z: 90.0
   }
   limit_strength: 0.0
-  spring_damping: 500.0
-  angle_limit { min: -360.0 max: 360.0 }
-}
-bodies {
-  name: "pole2"
-  colliders {
-    capsule {
-      radius: 0.049
-      length:  1.00 
-    }
-  }
-  frozen { position { x: 0 y: 1 z: 0 } rotation { x: 1 y: 0 z: 1 } }
-  mass: 2.5
-}
-joints {
-  name: "hinge2"
-  stiffness: 30000.0
-  parent: "pole"
-  child: "pole2"
-  parent_offset { z: .45 }
-  child_offset { z: -.45 }
-  rotation {
-    z: 90.0
-  }
-  limit_strength: 0.0
-  spring_damping: 500.0
   angle_limit { min: -360.0 max: 360.0 }
 }
 
 actuators{
-  name: "hinge2"
-  joint: "hinge2"
-  strength: 100.0
+  name: "hinge"
+  joint: "hinge"
+  strength: 25.0
   torque{
   }
 }
-
-defaults {
-    angles { 
-        name: "hinge" 
-        angle{ x: 180.0 y: 0.0 z: 0.0} 
-    }
-}
-
-
 collide_include {}
 gravity {
   z: -9.81
 }
-dt: 0.01
-substeps: 4
+dt: 0.04
+substeps: 8
 """

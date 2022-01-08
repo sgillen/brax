@@ -34,8 +34,15 @@ from brax.envs import reacherangle
 from brax.envs import swimmer
 from brax.envs import ur5e
 from brax.envs import walker2d
-from brax.envs import acrobot
 from brax.envs import acrobotangle
+
+from brax.envs import acrobot
+from brax.envs import pendulum
+from brax.envs import inverted_double_pendulum_swingup
+from brax.envs import inverted_pendulum_swingup
+
+
+
 from brax.envs import wrappers
 from brax.envs.env import Env, State, Wrapper
 import gym
@@ -58,7 +65,10 @@ _envs = {
     'ur5e': ur5e.Ur5e,
     'walker2d': walker2d.Walker2d,
     'acrobot': acrobot.Acrobot,
-    'acrobotangle': acrobotangle.AcrobotAngle, 
+    'acrobotangle': acrobotangle.AcrobotAngle,
+    'pendulum': pendulum.Pendulum,
+    'inverted_pendulum_swingup': inverted_pendulum_swingup.InvertedPendulum,
+    'inverted_double_pendulum_swingup': inverted_double_pendulum_swingup.InvertedDoublePendulum,
 }
 
 
