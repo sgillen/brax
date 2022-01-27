@@ -15,6 +15,7 @@
 """An inverted pendulum environment."""
 
 import brax
+import jax
 from brax import jumpy as jp
 from brax.envs import env
 
@@ -47,15 +48,16 @@ class InvertedDoublePendulum(env.Env):
 
   def step(self, state: env.State, action: jp.ndarray) -> env.State:
     """Run one timestep of the environment's dynamics."""
-    alive_bonus = 10.0
     qp, info = self.sys.step(state.qp, action)
     (joint_angle,), (joint_vel,) = self.sys.joints[0].angle_vel(qp)
     obs = self._get_obs(qp, info, joint_angle, joint_vel)
-    tip_pos = jp.take(state.qp, 2).to_world(jp.array([0, 0, .3]))
-    (x, _, y), _ = tip_pos
+    # tip_pos = jp.take(state.qp, 2).to_world(jp.array([0, 0, .3]))
+    # (x, _, y), _ = tip_pos
     dist_penalty = 0.05 * x**2 + (y - 2)**2
     v1, v2 = joint_vel
     vel_penalty = .01 * v1**2 + .005 * v2**2
+    #dist_penalty = jp.sum(joint_angle**2)  + obs[0]**2
+    #vel_penalty = .1*jp.sum(joint_vel**2)
     alive_bonus = 10.0
     r = alive_bonus - dist_penalty - vel_penalty
     #done = jp.where(y <= 1, jp.float32(1), jp.float32(0))

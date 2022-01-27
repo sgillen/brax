@@ -66,7 +66,6 @@ _envs = {
     'walker2d': walker2d.Walker2d,
     'acrobot': acrobot.Acrobot,
     'acrobotangle': acrobotangle.AcrobotAngle,
-    'pendulum': pendulum.Pendulum,
     'inverted_pendulum_swingup': inverted_pendulum_swingup.InvertedPendulum,
     'inverted_double_pendulum_swingup': inverted_double_pendulum_swingup.InvertedDoublePendulum,
 }

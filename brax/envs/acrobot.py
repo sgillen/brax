@@ -28,7 +28,6 @@ class Acrobot(env.Env):
 
   def reset(self, rng: jp.ndarray) -> env.State:
     """Resets the environment to an initial state."""
-    rng = jax.random.PRNGKey(0)
     rng, rng1, rng2 = jp.random_split(rng, 3)
     qpos = self.sys.default_angle() + jp.random_uniform(
         rng1, (self.sys.num_joint_dof,), -.01, .01)
@@ -57,7 +56,7 @@ class Acrobot(env.Env):
     
 
     #r = jp.sum(-(obs**2))
-    r = -jp.sum(joint_angle**2) + -.1*jp.sum(joint_vel**2) + alive_bonus
+    r = -jp.sum(joint_angle**2)# + -.1*jp.sum(joint_vel**2) + alive_bonus
     
     #done = jp.where(y <= 1, jp.float32(1), jp.float32(0))
     #done = jp.where(jp.abs(joint_angle[0]) >= .5, jp.float32(1), jp.float32(0))
@@ -158,7 +157,7 @@ joints {
 actuators{
   name: "hinge2"
   joint: "hinge2"
-  strength: 100.0
+  strength: 25.0
   torque{
   }
 }
