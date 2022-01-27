@@ -1,4 +1,4 @@
-# Copyright 2021 The Brax Authors.
+# Copyright 2022 The Brax Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -69,6 +69,10 @@ _envs = {
     'inverted_pendulum_swingup': inverted_pendulum_swingup.InvertedPendulum,
     'inverted_double_pendulum_swingup': inverted_double_pendulum_swingup.InvertedDoublePendulum,
 }
+
+
+def get_environment(env_name, **kwargs):
+  return _envs[env_name](**kwargs)
 
 
 def create(env_name: str,
