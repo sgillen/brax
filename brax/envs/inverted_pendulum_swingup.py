@@ -46,7 +46,7 @@ class InvertedPendulum(env.Env):
     qp, info = self.sys.step(state.qp, action)
     obs = self._get_obs(qp, info)
 
-    reward = -(obs[5] - 0.0)**2
+    reward = -(obs[1] - 0.0)**2
     #reward = 1.0
     
     #done = jp.where(qp.pos[1, 2] > .2, jp.float32(0), jp.float32(1))
@@ -64,15 +64,9 @@ class InvertedPendulum(env.Env):
     # some pre-processing to pull joint angles and velocities
     (joint_angle,), (joint_vel,) = self.sys.joints[0].angle_vel(qp)
 
-    # qpos:
-    qpos = [qp.pos[0, 2:], qp.rot[0], joint_angle]
-
-    # qvel:
-    # velocity of the cart
-    # joint angle velocities
-    qvel = [qp.vel[0], joint_vel]
-
-    return jp.concatenate(qpos + qvel)
+    # [cart pos, angle, cart vel, angle vel]
+    obs = jp.concatenate([qp.pos[0, :1], joint_angle, qp.vel[0, :1], joint_vel])
+    return obs
 
 
 _SYSTEM_CONFIG = """

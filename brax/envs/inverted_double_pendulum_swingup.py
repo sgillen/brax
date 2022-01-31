@@ -51,13 +51,13 @@ class InvertedDoublePendulum(env.Env):
     qp, info = self.sys.step(state.qp, action)
     (joint_angle,), (joint_vel,) = self.sys.joints[0].angle_vel(qp)
     obs = self._get_obs(qp, info, joint_angle, joint_vel)
-    # tip_pos = jp.take(state.qp, 2).to_world(jp.array([0, 0, .3]))
-    # (x, _, y), _ = tip_pos
+    tip_pos = jp.take(state.qp, 2).to_world(jp.array([0, 0, .3]))
+    (x, _, y), _ = tip_pos
     dist_penalty = 0.05 * x**2 + (y - 2)**2
     v1, v2 = joint_vel
     vel_penalty = .01 * v1**2 + .005 * v2**2
-    #dist_penalty = jp.sum(joint_angle**2)  + obs[0]**2
-    #vel_penalty = .1*jp.sum(joint_vel**2)
+    dist_penalty = jp.sum(joint_angle**2)  + obs[0]**2
+    vel_penalty = .01*jp.sum(joint_vel**2)
     alive_bonus = 10.0
     r = alive_bonus - dist_penalty - vel_penalty
     #done = jp.where(y <= 1, jp.float32(1), jp.float32(0))
@@ -74,6 +74,7 @@ class InvertedDoublePendulum(env.Env):
   def action_size(self):
     return 1
 
+  
   def _get_obs(self, qp: brax.QP, info: brax.Info, joint_angle: jp.ndarray,
                joint_vel: jp.ndarray) -> jp.ndarray:
     """Observe cartpole body position and velocities."""
@@ -85,7 +86,7 @@ class InvertedDoublePendulum(env.Env):
     ]
 
     # qvel:
-    qvel = [qp.vel.reshape(-1), qp.ang.reshape(-1), joint_vel]
+    qvel = [jp.array([qp.vel[0,0]]), joint_vel]
 
     return jp.concatenate(position_obs + qvel)
 

@@ -56,7 +56,7 @@ class Acrobot(env.Env):
     
 
     #r = jp.sum(-(obs**2))
-    r = -jp.sum(joint_angle**2)# + -.1*jp.sum(joint_vel**2) + alive_bonus
+    r = -jp.sum(joint_angle**2) + -.01*jp.sum(joint_vel**2) + alive_bonus
     
     #done = jp.where(y <= 1, jp.float32(1), jp.float32(0))
     #done = jp.where(jp.abs(joint_angle[0]) >= .5, jp.float32(1), jp.float32(0))
@@ -126,7 +126,7 @@ joints {
   }
   limit_strength: 0.0
   spring_damping: 500.0
-  angle_limit { min: -360.0 max: 360.0 }
+  angle_limit { min: 0.0 max: 0.0 }
 }
 bodies {
   name: "pole2"
@@ -151,7 +151,7 @@ joints {
   }
   limit_strength: 0.0
   spring_damping: 500.0
-  angle_limit { min: -360.0 max: 360.0 }
+  angle_limit { min: 0.0 max: 0.0 }
 }
 
 actuators{
